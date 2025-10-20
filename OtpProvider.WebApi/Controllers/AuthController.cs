@@ -2,8 +2,8 @@
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using OtpProvider.WebApi.Config;
-using OtpProvider.WebApi.DTO;
-using OtpProvider.WebApi.Services;
+using OtpProvider.Application.DTOs;
+using OtpProvider.Application.Services;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;

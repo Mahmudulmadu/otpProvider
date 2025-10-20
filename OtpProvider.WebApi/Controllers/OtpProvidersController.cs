@@ -1,8 +1,11 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using OtpProvider.WebApi.Data;
-using OtpProvider.WebApi.DTO;
-using OtpProvider.WebApi.Entities;
+using OtpProvider.Infrastructure.Data;
+using OtpProvider.Application.DTOs;
+using OtpProvider.Domain.Enums;
+using OtpProvider.Domain;
+using OtpProvider.Application.Mapping;
+
 
 namespace WebApi.Practice.Controllers
 {
@@ -73,7 +76,7 @@ namespace WebApi.Practice.Controllers
             if (nameExists)
                 return Conflict($"An OTP provider with name '{dto.Name}' already exists.");
 
-            var entity = new OtpProvider.WebApi.Entities.OtpProvider
+            var entity = new OtpProvider.Domain.Entities.OtpProvider
             {
                 Name = dto.Name,
                 Description = dto.Description,

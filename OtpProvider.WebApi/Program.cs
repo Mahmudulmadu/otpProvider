@@ -1,15 +1,16 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using OtpProvider.Application.DTOs;
+using OtpProvider.Application.Interfaces;
+using OtpProvider.Application.Services;
+using OtpProvider.Infrastructure.Data;
+using OtpProvider.Infrastructure.Factory;
+using OtpProvider.Infrastructure.OtpSenders;
 using OtpProvider.WebApi.Config;
-using OtpProvider.WebApi.Data;
-using OtpProvider.WebApi.DTO;
-using OtpProvider.WebApi.OtpSender;
-using OtpProvider.WebApi.Services;
 using System.Text;
 using System.Text.Json.Serialization;
-using WebApi.Practice.Factory;
-using WebApi.Practice.Services;
+
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -21,6 +22,9 @@ builder.Services.Configure<JwtSettings>(
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+builder.Services.AddScoped<IApplicationDbContext>(provider =>
+    provider.GetRequiredService<ApplicationDbContext>());
 
 // Register OTP senders
 builder.Services.AddScoped<SmsOtpSender>();

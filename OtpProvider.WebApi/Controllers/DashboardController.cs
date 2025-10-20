@@ -1,9 +1,10 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using OtpProvider.WebApi.Data;
-using OtpProvider.WebApi.DTO;
-using OtpProvider.WebApi.Entities;
+using OtpProvider.Infrastructure.Data;
+using OtpProvider.Application.DTOs;
+using OtpProvider.Domain.Entities;
+using OtpProvider.Domain.Enums;
 
 namespace OtpProvider.WebApi.Controllers
 {

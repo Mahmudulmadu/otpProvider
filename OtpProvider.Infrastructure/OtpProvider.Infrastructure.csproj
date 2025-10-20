@@ -1,15 +1,18 @@
-﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net9.0</TargetFramework>
-    <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-	<UserSecretsId>otp-provider-gmail-password</UserSecretsId>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="9.0.6" />
-    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.4" />
+    <Folder Include="Data\" />
+    <Folder Include="Email\" />
+    <Folder Include="Repositories\" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.10" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.10">
       <PrivateAssets>all</PrivateAssets>
@@ -20,20 +23,11 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="Swashbuckle.AspNetCore" Version="8.1.1" />
-    <PackageReference Include="Swashbuckle.AspNetCore.Swagger" Version="8.1.1" />
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="wwwroot\css\" />
-    <Folder Include="wwwroot\js\" />
+    <ProjectReference Include="..\OtpProvider.Domain\OtpProvider.Domain.csproj" />
+    <ProjectReference Include="..\OtpProvider.Application\OtpProvider.Application.csproj" />
   </ItemGroup>
-
-	<ItemGroup>
-		<ProjectReference Include="..\OtpProvider.Domain\OtpProvider.Domain.csproj" />
-		<ProjectReference Include="..\OtpProvider.Application\OtpProvider.Application.csproj" />
-		<ProjectReference Include="..\OtpProvider.Infrastructure\OtpProvider.Infrastructure.csproj" />
-	</ItemGroup>
-
 
 </Project>

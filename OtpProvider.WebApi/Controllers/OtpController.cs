@@ -1,15 +1,16 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using OtpProvider.WebApi.Data;
-using OtpProvider.WebApi.DTO;
-using OtpProvider.WebApi.Entities;
-using OtpProvider.WebApi.Security;
+using OtpProvider.Infrastructure.Data;
+using OtpProvider.Application.DTOs;
+using OtpProvider.Domain.Entities;
+using OtpProvider.Domain.Enums;
+using OtpProvider.Domain.Security;
 using System.Security.Cryptography;
-using WebApi.Practice.DTO;
-using WebApi.Practice.Factory;
-using WebApi.Practice.Model;
-using WebApi.Practice.Services;
+
+using OtpProvider.Infrastructure.Factory;
+using OtpProvider.Application.Services;
+using OtpProvider.Application.Interfaces;
 
 namespace WebApi.Practice.Controllers
 {
