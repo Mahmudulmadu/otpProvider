@@ -1,37 +1,34 @@
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using OtpProvider.Infrastructure.Data;
 using OtpProvider.Application.DTOs;
-using OtpProvider.Domain.Entities;
+using OtpProvider.Application.Interfaces;
+using OtpProvider.Application.Interfaces.IRepository;
 using OtpProvider.Domain.Enums;
-
+using OtpProvider.Domain.Entities;
 namespace OtpProvider.WebApi.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    //[Authorize] // Uncomment when auth pipeline is ready
     public class DashboardController : ControllerBase
     {
-        private readonly ApplicationDbContext _db;
+        private readonly IUnitOfWork _uow;
 
-        public DashboardController(ApplicationDbContext db)
-        {
-            _db = db;
-        }
+        public DashboardController(IUnitOfWork uow) => _uow = uow;
 
-        // GET: /api/dashboard/stats?minutes=1440
         [HttpGet("stats")]
-        public async Task<ActionResult<OtpStatsResponse>> GetStats([FromQuery] int minutes = 1440)
+        public async Task<ActionResult<OtpStatsResponse>> GetStats([FromQuery] int minutes = 1440, CancellationToken ct = default)
         {
             if (minutes <= 0) minutes = 60;
-            if (minutes > 60 * 24 * 30) minutes = 60 * 24 * 30; // cap at ~30 days
+            if (minutes > 60 * 24 * 30) minutes = 60 * 24 * 30;
 
             var fromUtc = DateTime.UtcNow.AddMinutes(-minutes);
-            var baseQuery = _db.OtpRequests.AsNoTracking().Where(r => r.CreatedAt >= fromUtc);
 
-            // Single SQL round-trip instead of parallel awaits on same DbContext (which caused the exception)
-            var aggregated = await baseQuery
+            var query = _uow.OtpRepository
+                .Query() // we didn't create Query() in IOtpRepository earlier; assume it exists
+                .AsNoTracking()
+                .Where(r => r.CreatedAt >= fromUtc);
+
+            var aggregated = await query
                 .GroupBy(_ => 1)
                 .Select(g => new
                 {
@@ -40,7 +37,7 @@ namespace OtpProvider.WebApi.Controllers
                     TotalFailed = g.Count(r => r.SendStatus == OtpSendStatus.Failed),
                     TotalPending = g.Count(r => r.SendStatus == OtpSendStatus.Pending)
                 })
-                .FirstOrDefaultAsync();
+                .FirstOrDefaultAsync(ct);
 
             var totalSent = aggregated?.TotalSent ?? 0;
             var totalVerified = aggregated?.TotalVerified ?? 0;
@@ -60,13 +57,13 @@ namespace OtpProvider.WebApi.Controllers
             ));
         }
 
-        // GET: /api/dashboard/recent?limit=10
         [HttpGet("recent")]
-        public async Task<ActionResult<IEnumerable<OtpRecentItemDto>>> GetRecent([FromQuery] int limit = 10)
+        public async Task<ActionResult<IEnumerable<OtpRecentItemDto>>> GetRecent([FromQuery] int limit = 10, CancellationToken ct = default)
         {
             limit = Math.Clamp(limit, 1, 100);
 
-            var list = await _db.OtpRequests
+            var list = await _uow.OtpRepository
+                .Query()
                 .AsNoTracking()
                 .Include(r => r.OtpProvider)
                 .OrderByDescending(r => r.CreatedAt)
@@ -77,11 +74,9 @@ namespace OtpProvider.WebApi.Controllers
                     Destination = r.SentTo,
                     Provider = r.OtpProvider.Name,
                     CreatedUtc = r.CreatedAt,
-                    Status = r.IsUsed
-                        ? "Verified"
-                        : r.SendStatus.ToString()
+                    Status = r.IsUsed ? "Verified" : r.SendStatus.ToString()
                 })
-                .ToListAsync();
+                .ToListAsync(ct);
 
             return Ok(list);
         }

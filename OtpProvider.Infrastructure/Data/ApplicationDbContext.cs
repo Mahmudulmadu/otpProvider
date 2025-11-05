@@ -16,7 +16,7 @@ namespace OtpProvider.Infrastructure.Data
         public DbSet<ApplicationRole> Roles { get; set; }
         public DbSet<ApplicationUserRoles> UserRoles { get; set; }
 
-        public DbSet<OtpProvider.Domain.Entities.OtpProvider> OtpProviders { get; set; }
+        public DbSet<OtpProvider.Domain.Entities.OtpProviderEntity> OtpProviders { get; set; }
         public DbSet<OtpRequest> OtpRequests { get; set; }
         public DbSet<OtpVerification> OtpVerifications { get; set; }
 
@@ -53,7 +53,7 @@ namespace OtpProvider.Infrastructure.Data
             });
 
             // OtpProvider
-            modelBuilder.Entity<OtpProvider.Domain.Entities.OtpProvider>(entity =>
+            modelBuilder.Entity<OtpProvider.Domain.Entities.OtpProviderEntity>(entity =>
             {
                 entity.HasIndex(p => p.Name).IsUnique();
                 entity.Property(p => p.Name).IsRequired().HasMaxLength(100);

@@ -20,7 +20,7 @@ namespace OtpProvider.Domain.Entities
         public bool IsUsed { get; set; } = false;
         public OtpSendStatus SendStatus { get; set; } = OtpSendStatus.Pending;
         public int OtpProviderId { get; set; }
-        public OtpProvider OtpProvider { get; set; } = null!;
+        public OtpProviderEntity OtpProvider { get; set; } = null!;
 
         public DateTime VerifiedAt { get; set; }
 

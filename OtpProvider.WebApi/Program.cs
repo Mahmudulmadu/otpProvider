@@ -3,10 +3,13 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using OtpProvider.Application.DTOs;
 using OtpProvider.Application.Interfaces;
+using OtpProvider.Application.Interfaces.IRepository;
 using OtpProvider.Application.Services;
+using OtpProvider.Domain.Interfaces;
 using OtpProvider.Infrastructure.Data;
 using OtpProvider.Infrastructure.Factory;
 using OtpProvider.Infrastructure.OtpSenders;
+using OtpProvider.Infrastructure.Repositories;
 using OtpProvider.WebApi.Config;
 using System.Text;
 using System.Text.Json.Serialization;
@@ -19,6 +22,10 @@ builder.Services.Configure<GmailSetting>(
     builder.Configuration.GetSection("GmailSetting"));
 builder.Services.Configure<JwtSettings>(
     builder.Configuration.GetSection("Jwt"));
+
+builder.Services.AddScoped<IOtpRepository, OtpRepository>();
+//builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));

@@ -3,7 +3,7 @@ namespace OtpProvider.Application.Mapping
 {
     public static class OtpProviderMappingExtensions
     {
-        public static OtpProviderDto ToDto(this OtpProvider.Domain.Entities.OtpProvider entity) => new()
+        public static OtpProviderDto ToDto(this OtpProvider.Domain.Entities.OtpProviderEntity entity) => new()
         {
             Id = entity.Id,
             Name = entity.Name,
@@ -14,7 +14,7 @@ namespace OtpProvider.Application.Mapping
             ConfigurationJson = entity.ConfigurationJson
         };
 
-        public static void ApplyUpdate(this OtpProvider.Domain.Entities.OtpProvider entity, OtpProviderUpdateDto dto)
+        public static void ApplyUpdate(this OtpProvider.Domain.Entities.OtpProviderEntity entity, OtpProviderUpdateDto dto)
         {
             entity.Name = dto.Name;
             entity.Description = dto.Description;

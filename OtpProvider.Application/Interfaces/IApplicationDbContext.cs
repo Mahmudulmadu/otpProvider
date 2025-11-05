@@ -10,7 +10,7 @@ namespace OtpProvider.Application.Interfaces
         DbSet<ApplicationRole> Roles { get; }
         DbSet<ApplicationUserRoles> UserRoles { get; }
 
-        DbSet<OtpProvider.Domain.Entities.OtpProvider> OtpProviders { get; }
+        DbSet<OtpProvider.Domain.Entities.OtpProviderEntity> OtpProviders { get; }
         DbSet<OtpRequest> OtpRequests { get; }
         DbSet<OtpVerification> OtpVerifications { get; }
 

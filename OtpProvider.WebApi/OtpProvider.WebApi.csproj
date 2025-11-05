@@ -30,8 +30,8 @@
   </ItemGroup>
 
 	<ItemGroup>
-		<ProjectReference Include="..\OtpProvider.Domain\OtpProvider.Domain.csproj" />
 		<ProjectReference Include="..\OtpProvider.Application\OtpProvider.Application.csproj" />
+		<ProjectReference Include="..\OtpProvider.Domain\OtpProvider.Domain.csproj" />
 		<ProjectReference Include="..\OtpProvider.Infrastructure\OtpProvider.Infrastructure.csproj" />
 	</ItemGroup>
 

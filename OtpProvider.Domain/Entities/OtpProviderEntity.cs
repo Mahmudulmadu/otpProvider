@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace OtpProvider.Domain.Entities
 {
-    public class OtpProvider
+    public class OtpProviderEntity
     {
         public int Id { get; set; }
         public string Name { get; set; } = string.Empty;

@@ -1,16 +1,13 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using OtpProvider.Infrastructure.Data;
 using OtpProvider.Application.DTOs;
+using OtpProvider.Application.Interfaces;
+using OtpProvider.Application.Interfaces.IRepository;
 using OtpProvider.Domain.Entities;
 using OtpProvider.Domain.Enums;
 using OtpProvider.Domain.Security;
-using System.Security.Cryptography;
-
 using OtpProvider.Infrastructure.Factory;
-using OtpProvider.Application.Services;
-using OtpProvider.Application.Interfaces;
+using System.Security.Cryptography;
 
 namespace WebApi.Practice.Controllers
 {
@@ -20,51 +17,38 @@ namespace WebApi.Practice.Controllers
     {
         private readonly OtpSenderFactory _factory;
         private readonly EmailServiceFactory _emailFactory;
-        private readonly ApplicationDbContext _db;
+        private readonly IUnitOfWork _uow;
         private const int OtpExpirySeconds = 300; // 5 minutes
         private const int MaxVerificationAttempts = 3;
 
-        public OtpController(OtpSenderFactory factory, EmailServiceFactory emailFactory, ApplicationDbContext db)
+        public OtpController(OtpSenderFactory factory, EmailServiceFactory emailFactory, IUnitOfWork uow)
         {
             _factory = factory;
             _emailFactory = emailFactory;
-            _db = db;
+            _uow = uow;
         }
 
         [HttpGet]
-        public IActionResult Get()
-        {
-            return Ok("Request received.");
-        }
+        public IActionResult Get() => Ok("Request received.");
 
         [HttpPost("send")]
         // [Authorize(Roles = "User")]
         [ProducesResponseType(typeof(SendOtpResponse), StatusCodes.Status200OK)]
-        public async Task<ActionResult<SendOtpResponse>> Send([FromBody] SendOtpRequest request)
+        public async Task<ActionResult<SendOtpResponse>> Send([FromBody] SendOtpRequest request, CancellationToken ct)
         {
             if (!ModelState.IsValid)
-            {
-                return BadRequest(new SendOtpResponse
-                {
-                    IsSent = false,
-                    ErrorMessage = "Invalid request."
-                });
-            }
+                return BadRequest(new SendOtpResponse { IsSent = false, ErrorMessage = "Invalid request." });
 
             var rawOtp = RandomNumberGenerator.GetInt32(0, 10000).ToString("D4");
             var hashedOtp = SecurityHashing.HashOtp(rawOtp);
 
-            var provider = await _db.OtpProviders
-                .AsNoTracking()
-                .FirstOrDefaultAsync(p => p.IsActive && p.DeliveryType == request.Method);
+            // find provider
+            var provider = (await _uow.OtpProviderRepository.GetAllAsync(onlyActive: true, ct))
+                .FirstOrDefault(p => p.DeliveryType == request.Method);
 
             if (provider is null)
             {
-                return BadRequest(new SendOtpResponse
-                {
-                    IsSent = false,
-                    ErrorMessage = "No active OTP provider available for the specified method."
-                });
+                return BadRequest(new SendOtpResponse { IsSent = false, ErrorMessage = "No active OTP provider available for the specified method." });
             }
 
             var now = DateTime.UtcNow;
@@ -85,8 +69,8 @@ namespace WebApi.Practice.Controllers
                 ErrorMessage = string.Empty
             };
 
-            _db.OtpRequests.Add(otpRequest);
-            await _db.SaveChangesAsync();
+            await _uow.OtpRepository.AddOtpRequestAsync(otpRequest, ct);
+            await _uow.SaveChangesAsync(ct);
 
             bool sendSucceeded = false;
             string? sendError = null;
@@ -94,7 +78,6 @@ namespace WebApi.Practice.Controllers
             try
             {
                 var sender = _factory.GetSender(request.Method);
-                // CHANGED: capture result of provider send instead of assuming success
                 sendSucceeded = await sender.SendOtp(request.To, rawOtp);
                 otpRequest.SendStatus = sendSucceeded ? OtpSendStatus.Success : OtpSendStatus.Failed;
                 if (!sendSucceeded)
@@ -110,8 +93,8 @@ namespace WebApi.Practice.Controllers
                 otpRequest.ErrorMessage = ex.Message;
             }
 
-            _db.OtpRequests.Update(otpRequest);
-            await _db.SaveChangesAsync();
+            await _uow.OtpRepository.UpdateOtpRequestAsync(otpRequest, ct);
+            await _uow.SaveChangesAsync(ct);
 
             return Ok(new SendOtpResponse
             {
@@ -128,26 +111,11 @@ namespace WebApi.Practice.Controllers
         public async Task<ActionResult<OtpVerifyResponse>> Verify([FromBody] OtpVerifyRequest request, CancellationToken ct)
         {
             if (request.RequestId == Guid.Empty || string.IsNullOrWhiteSpace(request.Otp))
-            {
-                return BadRequest(new OtpVerifyResponse
-                {
-                    IsSuccessful = false,
-                    ErrorMessage = "RequestId and Otp are required."
-                });
-            }
+                return BadRequest(new OtpVerifyResponse { IsSuccessful = false, ErrorMessage = "RequestId and Otp are required." });
 
-            var otpRequest = await _db.OtpRequests
-                .Include(r => r.OtpVerifications)
-                .FirstOrDefaultAsync(r => r.RequestId == request.RequestId, ct);
-
+            var otpRequest = await _uow.OtpRepository.GetByRequestIdAsync(request.RequestId, ct);
             if (otpRequest is null)
-            {
-                return NotFound(new OtpVerifyResponse
-                {
-                    IsSuccessful = false,
-                    ErrorMessage = "OTP request not found."
-                });
-            }
+                return NotFound(new OtpVerifyResponse { IsSuccessful = false, ErrorMessage = "OTP request not found." });
 
             var now = DateTime.UtcNow;
             var verification = new OtpVerification
@@ -164,8 +132,8 @@ namespace WebApi.Practice.Controllers
                 verification.IsSuccessful = false;
                 verification.FailureReason = OtpFailureReason.ProviderError;
                 otpRequest.AttemptCount++;
-                _db.OtpVerifications.Add(verification);
-                await _db.SaveChangesAsync(ct);
+                await _uow.OtpRepository.AddVerificationAsync(verification, ct);
+                await _uow.SaveChangesAsync(ct);
                 return Ok(new OtpVerifyResponse { IsSuccessful = false, ErrorMessage = "OTP not deliverable." });
             }
 
@@ -174,8 +142,8 @@ namespace WebApi.Practice.Controllers
                 verification.IsSuccessful = false;
                 verification.FailureReason = OtpFailureReason.AlreadyUsed;
                 otpRequest.AttemptCount++;
-                _db.OtpVerifications.Add(verification);
-                await _db.SaveChangesAsync(ct);
+                await _uow.OtpRepository.AddVerificationAsync(verification, ct);
+                await _uow.SaveChangesAsync(ct);
                 return Ok(new OtpVerifyResponse { IsSuccessful = false, ErrorMessage = "OTP already used." });
             }
 
@@ -184,8 +152,8 @@ namespace WebApi.Practice.Controllers
                 verification.IsSuccessful = false;
                 verification.FailureReason = OtpFailureReason.Expired;
                 otpRequest.AttemptCount++;
-                _db.OtpVerifications.Add(verification);
-                await _db.SaveChangesAsync(ct);
+                await _uow.OtpRepository.AddVerificationAsync(verification, ct);
+                await _uow.SaveChangesAsync(ct);
                 return Ok(new OtpVerifyResponse { IsSuccessful = false, ErrorMessage = "OTP expired." });
             }
 
@@ -193,8 +161,8 @@ namespace WebApi.Practice.Controllers
             {
                 verification.IsSuccessful = false;
                 verification.FailureReason = OtpFailureReason.LockedOut;
-                _db.OtpVerifications.Add(verification);
-                await _db.SaveChangesAsync(ct);
+                await _uow.OtpRepository.AddVerificationAsync(verification, ct);
+                await _uow.SaveChangesAsync(ct);
                 return Ok(new OtpVerifyResponse { IsSuccessful = false, ErrorMessage = "Maximum attempts exceeded." });
             }
 
@@ -203,8 +171,8 @@ namespace WebApi.Practice.Controllers
                 verification.IsSuccessful = false;
                 verification.FailureReason = OtpFailureReason.InvalidOtp;
                 otpRequest.AttemptCount++;
-                _db.OtpVerifications.Add(verification);
-                await _db.SaveChangesAsync(ct);
+                await _uow.OtpRepository.AddVerificationAsync(verification, ct);
+                await _uow.SaveChangesAsync(ct);
                 return Ok(new OtpVerifyResponse { IsSuccessful = false, ErrorMessage = "Invalid OTP." });
             }
 
@@ -212,9 +180,9 @@ namespace WebApi.Practice.Controllers
             otpRequest.IsUsed = true;
             otpRequest.VerifiedAt = now;
             otpRequest.AttemptCount++;
-            _db.OtpVerifications.Add(verification);
-            _db.OtpRequests.Update(otpRequest);
-            await _db.SaveChangesAsync(ct);
+            await _uow.OtpRepository.AddVerificationAsync(verification, ct);
+            await _uow.OtpRepository.UpdateOtpRequestAsync(otpRequest, ct);
+            await _uow.SaveChangesAsync(ct);
 
             return Ok(new OtpVerifyResponse { IsSuccessful = true });
         }

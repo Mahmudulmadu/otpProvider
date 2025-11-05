@@ -7,9 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Folder Include="Data\" />
     <Folder Include="Email\" />
-    <Folder Include="Repositories\" />
   </ItemGroup>
 
   <ItemGroup>
@@ -26,8 +24,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\OtpProvider.Domain\OtpProvider.Domain.csproj" />
     <ProjectReference Include="..\OtpProvider.Application\OtpProvider.Application.csproj" />
+    <ProjectReference Include="..\OtpProvider.Domain\OtpProvider.Domain.csproj" />
   </ItemGroup>
 
 </Project>
