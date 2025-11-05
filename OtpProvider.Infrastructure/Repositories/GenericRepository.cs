@@ -1,6 +1,6 @@
-﻿//using Microsoft.EntityFrameworkCore;
-//using OtpProvider.Application.Interfaces;
-//using OtpProvider.Application.Interfaces.IRepository;
+﻿using Microsoft.EntityFrameworkCore;
+using OtpProvider.Application.Interfaces;
+using OtpProvider.Application.Interfaces.IRepository;
 
 
 //namespace OtpProvider.Infrastructure.Repositories
